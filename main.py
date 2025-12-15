@@ -104,7 +104,7 @@ async def upload_image(
     
     # Generate filename with timestamp and UUID
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    unique_id = str(uuid.uuid4())[:8]  # Short UUID
+    unique_id = str(uuid.uuid4())[:16]  # Use 16 characters for better uniqueness
     extension = get_file_extension(sanitized_filename)
     new_filename = f"{waterMeterId}_{timestamp}_{unique_id}.{extension}"
     file_path = upload_path / new_filename
