@@ -1,7 +1,6 @@
 import os
 import re
 import uuid
-import imghdr
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -46,8 +45,18 @@ def is_allowed_file(filename: str) -> bool:
 
 def validate_image_content(file_content: bytes) -> bool:
     """Validate image content using magic bytes"""
-    image_type = imghdr.what(None, h=file_content[:32])
-    return image_type in ['jpeg', 'png']
+    if len(file_content) < 12:
+        return False
+    
+    # Check for JPEG magic bytes (FF D8 FF)
+    if file_content[0:3] == b'\xff\xd8\xff':
+        return True
+    
+    # Check for PNG magic bytes (89 50 4E 47 0D 0A 1A 0A)
+    if file_content[0:8] == b'\x89\x50\x4e\x47\x0d\x0a\x1a\x0a':
+        return True
+    
+    return False
 
 
 @app.post("/upload")
@@ -89,31 +98,6 @@ async def upload_image(
             detail=f"Water meter with ID {waterMeterId} not found or inactive"
         )
     
-    # Read file contents
-    try:
-        contents = await file.read()
-    except Exception as e:
-        logger.error(f"Failed to read file: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail="Internal server error occurred while processing upload"
-        )
-    
-    # Validate file size
-    file_size = len(contents)
-    if file_size > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File size exceeds maximum allowed size of {MAX_FILE_SIZE / (1024*1024):.1f}MB"
-        )
-    
-    # Validate actual image content
-    if not validate_image_content(contents):
-        raise HTTPException(
-            status_code=400,
-            detail="File content is not a valid image"
-        )
-    
     # Create upload directory if it doesn't exist
     upload_path = Path(UPLOAD_DIR)
     upload_path.mkdir(parents=True, exist_ok=True)
@@ -125,20 +109,51 @@ async def upload_image(
     new_filename = f"{waterMeterId}_{timestamp}_{unique_id}.{extension}"
     file_path = upload_path / new_filename
     
-    # Save file to disk using chunks
+    # Save file to disk using chunks and validate simultaneously
+    file_size = 0
+    first_chunk = None
     try:
         with open(file_path, "wb") as f:
-            # Write contents in chunks
-            offset = 0
-            while offset < len(contents):
-                chunk = contents[offset:offset + CHUNK_SIZE]
+            while True:
+                chunk = await file.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                
+                # Store first chunk for validation
+                if first_chunk is None:
+                    first_chunk = chunk
+                
+                # Check file size
+                file_size += len(chunk)
+                if file_size > MAX_FILE_SIZE:
+                    # Clean up partial file
+                    f.close()
+                    if file_path.exists():
+                        file_path.unlink()
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"File size exceeds maximum allowed size of {MAX_FILE_SIZE / (1024*1024):.1f}MB"
+                    )
+                
                 f.write(chunk)
-                offset += CHUNK_SIZE
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to save file: {str(e)}")
+        if file_path.exists():
+            file_path.unlink()
         raise HTTPException(
             status_code=500,
             detail="Internal server error occurred while processing upload"
+        )
+    
+    # Validate actual image content using first chunk
+    if not first_chunk or not validate_image_content(first_chunk):
+        if file_path.exists():
+            file_path.unlink()
+        raise HTTPException(
+            status_code=400,
+            detail="File content is not a valid image"
         )
     
     # Insert record into database
