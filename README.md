@@ -2,7 +2,19 @@
 
 FastAPI aplikacija za upload slika potrošača brojila.
 
-## Instalacija
+## Instalacija i pokretanje
+
+### Opcija 1: Docker (preporučeno)
+
+1. Pokreni aplikaciju sa Docker Compose:
+```bash
+docker-compose up -d
+```
+
+2. API će biti dostupan na `http://localhost:8000`
+3. MySQL baza će biti automatski inicijalizovana sa test podacima
+
+### Opcija 2: Lokalna instalacija
 
 1. Instaliraj dependencies:
 ```bash
@@ -16,8 +28,12 @@ cp .env.example .env
 
 3. Ažuriraj `.env` fajl sa pravim kredencijalima za bazu.
 
-## Pokretanje
+4. Kreiraj MySQL bazu i tabele (koristi `init.sql` skripta):
+```bash
+mysql -u root -p < init.sql
+```
 
+5. Pokreni aplikaciju:
 ```bash
 uvicorn main:app --reload
 ```
@@ -114,5 +130,28 @@ ecitko/
 ├── requirements.txt     # Python dependencies
 ├── .env.example         # Primer environment varijabli
 ├── .gitignore          # Git ignore rules
+├── Dockerfile          # Docker image konfiguracija
+├── docker-compose.yml  # Docker Compose setup
+├── init.sql            # MySQL schema i test podaci
+├── test_upload.py      # Primer test skripta
 └── README.md           # Dokumentacija
 ```
+
+## Testiranje
+
+Za testiranje endpointa, prvo pokreni aplikaciju, a zatim možeš koristiti:
+
+### cURL
+```bash
+curl -X POST "http://localhost:8000/upload" \
+  -F "consumerId=1" \
+  -F "file=@/path/to/image.jpg"
+```
+
+### Python test script
+```bash
+python test_upload.py
+```
+
+### Swagger UI
+Otvori browser i idi na `http://localhost:8000/docs` za interaktivnu API dokumentaciju.
