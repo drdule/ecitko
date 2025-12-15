@@ -44,6 +44,9 @@ CREATE TABLE IF NOT EXISTS images (
 -- ============================================================================
 -- TABLE: readings
 -- Purpose: Store water meter readings
+-- Note: reading_value can be NULL when OCR processing is pending or failed
+-- Note: image_path provides a simple reference to the source image,
+--       while the images table tracks detailed metadata and processing status
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS readings (
     id INT PRIMARY KEY AUTO_INCREMENT,
