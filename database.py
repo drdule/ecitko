@@ -1,10 +1,14 @@
 import os
+import logging
 from typing import Optional
 import mysql.connector
 from mysql.connector import Error
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class Database:
@@ -26,7 +30,7 @@ class Database:
             )
             return self.connection
         except Error as e:
-            print(f"Error connecting to MySQL: {e}")
+            logger.error(f"Error connecting to MySQL: {e}")
             raise
 
     def disconnect(self):
@@ -47,8 +51,8 @@ class Database:
             cursor.close()
             return result is not None
         except Error as e:
-            print(f"Error checking consumer existence: {e}")
-            return False
+            logger.error(f"Error checking consumer existence: {e}")
+            raise
 
     def insert_image(self, consumer_id: int, image_url: str) -> Optional[int]:
         """Insert image record into database and return the image_id"""
@@ -67,7 +71,7 @@ class Database:
             cursor.close()
             return image_id
         except Error as e:
-            print(f"Error inserting image: {e}")
+            logger.error(f"Error inserting image: {e}")
             if self.connection:
                 self.connection.rollback()
             raise

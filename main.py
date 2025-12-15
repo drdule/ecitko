@@ -13,7 +13,10 @@ ALLOWED_EXTENSIONS = {'jpeg', 'jpg', 'png'}
 
 def get_file_extension(filename: str) -> str:
     """Extract file extension from filename"""
-    return filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+    if '.' not in filename:
+        return ''
+    parts = filename.rsplit('.', 1)
+    return parts[1].lower() if len(parts) == 2 and parts[1] else ''
 
 
 def is_allowed_file(filename: str) -> bool:
