@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS water_meters (
     meter_code VARCHAR(50) UNIQUE NOT NULL,
     location VARCHAR(255),
     installation_date DATE,
-    is_active TINYINT DEFAULT 1,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (consumer_id) REFERENCES consumers(id)
 );
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS images (
     id INT PRIMARY KEY AUTO_INCREMENT,
     water_meter_id INT NOT NULL,
     image_url VARCHAR(512) NOT NULL,
-    processed TINYINT DEFAULT 0,
+    processed BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (water_meter_id) REFERENCES water_meters(id)
 );
@@ -66,7 +66,7 @@ INSERT INTO consumers (customer_code, name, address) VALUES
 
 -- Insert sample water meters (showing consumer K-001 has 2 meters)
 INSERT INTO water_meters (consumer_id, meter_code, location, installation_date) VALUES
-    (1, 'VM-001-A', 'Glavni vodomer', '2024-01-15'),
-    (1, 'VM-001-B', 'Vodomer u bašti', '2024-01-15'),
-    (2, 'VM-002-A', 'Stan', '2024-02-10'),
-    (3, 'VM-003-A', 'Kuća', '2024-03-05');
+    ((SELECT id FROM consumers WHERE customer_code = 'K-001'), 'VM-001-A', 'Glavni vodomer', '2024-01-15'),
+    ((SELECT id FROM consumers WHERE customer_code = 'K-001'), 'VM-001-B', 'Vodomer u bašti', '2024-01-15'),
+    ((SELECT id FROM consumers WHERE customer_code = 'K-002'), 'VM-002-A', 'Stan', '2024-02-10'),
+    ((SELECT id FROM consumers WHERE customer_code = 'K-003'), 'VM-003-A', 'Kuća', '2024-03-05');
