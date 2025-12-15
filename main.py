@@ -126,17 +126,17 @@ async def upload_image(
                 # Check file size
                 file_size += len(chunk)
                 if file_size > MAX_FILE_SIZE:
-                    # Clean up partial file
-                    f.close()
-                    if file_path.exists():
-                        file_path.unlink()
+                    # File will be cleaned up after with block
                     raise HTTPException(
                         status_code=400,
                         detail=f"File size exceeds maximum allowed size of {MAX_FILE_SIZE / (1024*1024):.1f}MB"
                     )
                 
                 f.write(chunk)
-    except HTTPException:
+    except HTTPException as e:
+        # Clean up partial file on validation errors
+        if file_path.exists():
+            file_path.unlink()
         raise
     except Exception as e:
         logger.error(f"Failed to save file: {str(e)}")
