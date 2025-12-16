@@ -62,25 +62,25 @@ class Database:
         if self.connection and self.connection.is_connected():
             self.connection.close()
 
-    def water_meter_exists(self, water_meter_id: int) -> bool:
-        """Check if a water meter exists and is active"""
+    def consumer_exists(self, consumer_id: int) -> bool:
+        """Check if a consumer exists"""
         try:
             if not self.connection or not self.connection.is_connected():
                 self.connect()
             
             cursor = self.connection.cursor()
             try:
-                query = "SELECT id FROM water_meters WHERE id = %s AND is_active = 1"
-                cursor.execute(query, (water_meter_id,))
+                query = "SELECT id FROM consumers WHERE id = %s"
+                cursor.execute(query, (consumer_id,))
                 result = cursor.fetchone()
                 return result is not None
             finally:
                 cursor.close()
         except Error as e:
-            logger.error(f"Error checking water meter existence: {e}")
+            logger.error(f"Error checking consumer existence: {e}")
             raise
 
-    def insert_image(self, water_meter_id: int, image_url: str) -> Optional[int]:
+    def insert_image(self, consumer_id: int, image_url: str) -> Optional[int]:
         """Insert image record into database and return the image_id"""
         try:
             if not self.connection or not self.connection.is_connected():
@@ -89,10 +89,10 @@ class Database:
             cursor = self.connection.cursor()
             try:
                 query = """
-                    INSERT INTO images (water_meter_id, image_url, processed, created_at)
+                    INSERT INTO images (consumer_id, image_url, processed, created_at)
                     VALUES (%s, %s, 0, NOW())
                 """
-                cursor.execute(query, (water_meter_id, image_url))
+                cursor.execute(query, (consumer_id, image_url))
                 self.connection.commit()
                 image_id = cursor.lastrowid
                 return image_id
@@ -104,8 +104,8 @@ class Database:
                 self.connection.rollback()
             raise
 
-    def get_water_meter_info(self, water_meter_id: int) -> Optional[dict]:
-        """Get water meter information including consumer details"""
+    def get_consumer_info(self, consumer_id: int) -> Optional[dict]:
+        """Get consumer information"""
         try:
             if not self.connection or not self.connection.is_connected():
                 self.connect()
@@ -114,23 +114,19 @@ class Database:
             try:
                 query = """
                     SELECT 
-                        wm.id as meter_id,
-                        wm.meter_code,
-                        wm.location,
-                        wm.is_active,
-                        c.id as consumer_id,
-                        c.customer_code,
-                        c.name as consumer_name
-                    FROM water_meters wm
-                    JOIN consumers c ON wm.consumer_id = c.id
-                    WHERE wm.id = %s
+                        id,
+                        name,
+                        address,
+                        created_at
+                    FROM consumers
+                    WHERE id = %s
                 """
-                cursor.execute(query, (water_meter_id,))
+                cursor.execute(query, (consumer_id,))
                 return cursor.fetchone()
             finally:
                 cursor.close()
         except Error as e:
-            logger.error(f"Error getting water meter info: {e}")
+            logger.error(f"Error getting consumer info: {e}")
             raise
 
 
