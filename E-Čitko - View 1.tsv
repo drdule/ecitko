@@ -1,0 +1,79 @@
+Title	Assignees	Status	Linked pull requests	Sub-issues progress
+"Napraviti MySQL šemu: tables consumers, readings, images (kolone + indeksi)"	drdule	Todo		
+Implementirati endpoint POST /upload (multipart consumerId + image) za prihvat slike		Todo		
+Implementirati presigned S3/Spaces upload endpoint (POST /presign)		Todo		
+Implementirati endpoint /notify_upload koji prima obaveštenje o uspešnom uploadu		Todo		
+Implementirati healthcheck endpoint /health i metrics endpoint		Todo		
+Implementirati autentikaciju API po tokenu i validaciju requesta		Todo		
+Implementirati rate limiting i osnovnu validaciju fajlova (tip/veličina)		Todo		
+"Implementirati zapis rezultata OCR u MySQL (value, confidence, filename, timestamp)"		Todo		
+Dodati logging i error handling za sve endpointe		Todo		
+Implementirati migration skripte (Alembic ili ekvivalent) OCR pipeline & workers		Todo		
+Postaviti Redis (ili queue) i worker arhitekturu (Celery/RQ)		Todo		
+"Implementirati worker koji prima job, preprocesuje (crop/resize/threshold) i poziva Tesseract"		Todo		
+"Napraviti modul za preproces (OpenCV: crop, deskew, contrast, binarize)"		Todo		
+Implementirati retry politiku i dead letter log za neuspešne poslove		Todo		
+Implementirati endpoint za dohvat statusa OCR joba (async result)		Todo		
+Napraviti testne skripte za merenje performansi OCR (time/ram) Storage i CDN		Todo		
+Konfigurisati S3/Spaces bucket za slike i lifecycle pravila (arhiva/brisanje)		Todo		
+Implementirati presigned URLs i IAM/ACL pravila		Todo		
+Postaviti CDN (Cloudflare ili S3 CDN) za serviranje slika (opciono) Android aplikacija		Todo		
+Inicijalizovati Android projekat com.format.vodomeri (minSdk=21)		Todo		
+"Implementirati Room entities i DAO (Consumer, Reading, Image metadata)"		Todo		
+"Napraviti RecyclerView listu potrošača (ID, serial, address, lastReading)"		Todo		
+Implementirati detaljni prikaz korisnika sa dugmetom Slikaj brojilo		Todo		
+"Implementirati CameraX capture i snimanje slike u getExternalFilesDir(""MeterPhotos"")"		Todo		
+Implementirati ImageUtil za ime fajla: <consumerId>_<yyyyMMdd_HHmmss>.jpg		Todo		
+Implementirati WorkManager task za upload (uses presigned URL flow)		Todo		
+Implementirati Retrofit client za komunikaciju sa backendom (auth header)		Todo		
+Prikaz preview slike i vraćanje server odgovora (predložena vrednost + confidence)		Todo		
+"Implementirati tri dugmeta u preview: Potvrdi, Slikaj ponovo, Unesi ručno"		Todo		
+Implementirati ručni unos vrednosti (numeric keypad fokus)		Todo		
+"Sačuvati reading u lokalnu DB (timestamp, imagePath, value, uploaded flag)"		Todo		
+Implementirati sync logiku: WorkManager pokušava upload kada NetworkType.CONNECTED		Todo		
+Implementirati otvaranje slike preko FileProvider / Intent.ACTION_VIEW		Todo		
+Implementirati offline UX i poruke o greškama (toast/dialog)		Todo		
+"Implementirati login/auth flow za operatere (token storage, logout)"		Todo		
+"Dodati jednostavan settings ekran (server URL, sync prefs, API key)"		Todo		
+Pisanje unit i UI testova za ključne flowove Preview/UX i funkcionalnosti		Todo		
+Prikaz server predložene vrednosti iznad slike nakon OCR		Todo		
+"Implementirati lokalnu verziju potvrde: kad korisnik klikne Potvrdi, update DB i mark uploaded"		Todo		
+Ako korisnik klikne Slikaj ponovo – vratiti se na CameraX preview i zamijeniti zadnju sliku		Todo		
+Implementirati history/ pregled ranijih očitanja po korisniku ESP firmware (uređaj)		Todo		
+AP mode firmware (/snap.jpg) za povezivanje telefona i manualno okidanje (imaš)		Todo		
+Station mode firmware: povezi na hotspot i multipart HTTPS upload slike na server		Todo		
+Implementirati fallback storage (SPIFFS/SD) za neuspele uploadove i retry		Todo		
+Implementirati jednostavan heartbeat/telemetry endpoint (device -> server)		Todo		
+Implementirati OTA skeleton (esp_https_ota) i endpoint za proveru verzije		Todo		
+Implementirati CA cert pinning ili sigurnu validaciju TLS (WiFiClientSecure)		Todo		
+"Testirati upload sa PSRAM i bez, test memorijskih ograničenja OTA & device management"		Todo		
+Napraviti endpoint /firmware/latest koji vraća verziju i pre-signed URL		Todo		
+Implementirati server side canary roll out kontrolu (grupe/devices/percent)		Todo		
+"Implementirati logging i status device upgrade (started, downloaded, applied, rollback)"		Todo		
+Plan i procedura rollbacka i fail safe (timing i monitoring)		Todo		
+"Istražiti/odabrati device management alat (Mender, balena) za budući scale Infra & deployment"		Todo		
+"Napraviti docker-compose za lokalni dev (backend, mysql, redis, worker)"		Todo		
+Nginx reverse proxy konfiguracija i LetsEncrypt certbot integracija		Todo		
+Postaviti VPS i DNS: format.rs A record i SSL		Todo		
+"CI/CD pipeline: build backend image, run tests, deploy to staging (GitHub Actions)"		Todo		
+Backup i restore skripte za MySQL (automatski daily)		Todo		
+"Monitoring & alerting: logs (Sentry), metrics (Prometheus/Grafana) i alert (Slack/email)"		Todo		
+Implementirati autoscale plan za workers i API (dokumenti) Security & compliance		Todo		
+Enforce HTTPS everywhere; cert pinning opcionalno u app		Todo		
+Implement API key management i rotaciju ključeva		Todo		
+Data retention policy i GDPR/privatnost dokumentacija		Todo		
+"Input sanitization i protections (file size limits, mime type checks)"		Todo		
+Audit log za promenjene vrednosti i ko je potvrdio očitanje Testing & QA		Todo		
+Definisati test plan za end to end: capture → upload → OCR → confirm → DB		Todo		
+Napraviti test dataset (različiti tipovi brojila) i benchmark OCR		Todo		
+Load testing scenariji (simulacija burst 50–200 istovremenih uploadova)		Todo		
+QA checklist za release/mvp		Todo		
+Beta program: obuka i prikupljanje feedback od prvih operatora Docs & onboarding		Todo		
+Napraviti runbook za deploy i rollback procedure		Todo		
+"Napraviti operator guide (kako koristiti app, rešenje za greške)"		Todo		
+Napraviti dev setup guide (kako pokrenuti lokalno sa docker compose)		Todo		
+Napraviti README i API dokumentaciju (OpenAPI spec) Operacije / produkcija		Todo		
+Plan backup i retention za slike (policy + automatska rotacija)		Todo		
+"Plan za monitoring device fleet health (uptime, last seen)"		Todo		
+"Plan supporta i eskalacija (kontakt, SLA za kritične greške)"		Todo		
+Plan za skaliranje na 1000 uređaja (resource checklist i troškovi)		Todo
