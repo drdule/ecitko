@@ -134,7 +134,7 @@ Za testiranje endpointa, prvo pokreni aplikaciju, a zatim možeš koristiti:
 ### cURL
 ```bash
 curl -X POST "http://localhost:8000/upload" \
-  -F "waterMeterId=1" \
+  -F "consumerId=1" \
   -F "file=@meter_reading.jpg"
 ```
 
