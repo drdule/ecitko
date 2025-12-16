@@ -61,15 +61,15 @@ def validate_image_content(file_content: bytes) -> bool:
 
 @app.post("/upload")
 async def upload_image(
-    waterMeterId: int = Form(...),
+    consumerId: int = Form(...),
     file: UploadFile = File(...),
     db: Database = Depends(get_database)
 ):
     """
-    Upload an image for a water meter.
+    Upload an image for a consumer.
     
     Args:
-        waterMeterId: The ID of the water meter
+        consumerId: The ID of the consumer
         file: The image file to upload (JPEG, JPG, or PNG)
         db: Database dependency
     
@@ -91,11 +91,11 @@ async def upload_image(
             detail=f"Invalid file format. Allowed formats: {', '.join(ALLOWED_EXTENSIONS).upper()}"
         )
     
-    # Validate water meter exists and is active
-    if not db.water_meter_exists(waterMeterId):
+    # Validate consumer exists
+    if not db.consumer_exists(consumerId):
         raise HTTPException(
             status_code=404,
-            detail=f"Water meter with ID {waterMeterId} not found or inactive"
+            detail=f"Consumer with ID {consumerId} not found"
         )
     
     # Create upload directory if it doesn't exist
@@ -106,7 +106,7 @@ async def upload_image(
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     unique_id = str(uuid.uuid4())[:16]  # Use 16 characters for better uniqueness
     extension = get_file_extension(sanitized_filename)
-    new_filename = f"{waterMeterId}_{timestamp}_{unique_id}.{extension}"
+    new_filename = f"{consumerId}_{timestamp}_{unique_id}.{extension}"
     file_path = upload_path / new_filename
     
     # Save file to disk using chunks and validate simultaneously
@@ -159,10 +159,10 @@ async def upload_image(
     # Insert record into database
     image_url = str(file_path)
     try:
-        image_id = db.insert_image(waterMeterId, image_url)
+        image_id = db.insert_image(consumerId, image_url)
     except Exception as e:
         # Clean up file if database insert fails
-        logger.error(f"Database error for water_meter_id {waterMeterId}: {str(e)}")
+        logger.error(f"Database error for consumer_id {consumerId}: {str(e)}")
         if file_path.exists():
             file_path.unlink()
         raise HTTPException(

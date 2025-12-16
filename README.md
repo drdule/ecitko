@@ -48,13 +48,13 @@ FastAPI automatski generiše dokumentaciju:
 
 ## Endpoint: POST /upload
 
-Upload slika za vodomer.
+Upload slika za potrošača.
 
 ### Request
 - **Method**: POST
 - **Content-Type**: multipart/form-data
 - **Parameters**:
-  - `waterMeterId` (int, required): ID vodomera
+  - `consumerId` (int, required): ID potrošača
   - `file` (file, required): Slika fajl (JPEG, JPG, PNG)
 
 ### Response
@@ -75,10 +75,10 @@ Upload slika za vodomer.
 }
 ```
 
-**Error (404)** - Water meter not found:
+**Error (404)** - Consumer not found:
 ```json
 {
-  "detail": "Water meter with ID 1 not found or inactive"
+  "detail": "Consumer with ID 1 not found"
 }
 ```
 
@@ -86,7 +86,7 @@ Upload slika za vodomer.
 
 ```bash
 curl -X POST "http://localhost:8000/upload" \
-  -F "waterMeterId=1" \
+  -F "consumerId=1" \
   -F "file=@meter_reading.jpg"
 ```
 
@@ -97,39 +97,18 @@ Aplikacija očekuje sledeće tabele:
 ```sql
 CREATE TABLE consumers (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    customer_code VARCHAR(50) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     address VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE water_meters (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    consumer_id INT NOT NULL,
-    meter_code VARCHAR(50) UNIQUE NOT NULL,
-    location VARCHAR(255),
-    installation_date DATE,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (consumer_id) REFERENCES consumers(id)
-);
-
 CREATE TABLE images (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    water_meter_id INT NOT NULL,
-    image_url VARCHAR(512) NOT NULL,
-    processed BOOLEAN DEFAULT FALSE,
+    consumer_id INT NOT NULL,
+    image_url VARCHAR(255) NOT NULL,
+    processed TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (water_meter_id) REFERENCES water_meters(id)
-);
-
-CREATE TABLE readings (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    water_meter_id INT NOT NULL,
-    reading_value DECIMAL(10,2),
-    image_path VARCHAR(512),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (water_meter_id) REFERENCES water_meters(id)
+    FOREIGN KEY (consumer_id) REFERENCES consumers(id)
 );
 ```
 
@@ -155,7 +134,7 @@ Za testiranje endpointa, prvo pokreni aplikaciju, a zatim možeš koristiti:
 ### cURL
 ```bash
 curl -X POST "http://localhost:8000/upload" \
-  -F "waterMeterId=1" \
+  -F "consumerId=1" \
   -F "file=@meter_reading.jpg"
 ```
 
