@@ -1,11 +1,14 @@
 import os
 import re
 import uuid
+import secrets
 import logging
 from datetime import datetime
 from pathlib import Path
-from fastapi import FastAPI, File, UploadFile, Form, Depends, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, Depends, HTTPException, Header
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+from typing import Literal
 from database import Database, get_database
 
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +20,65 @@ UPLOAD_DIR = os.getenv('UPLOAD_DIR', '/srv/ecitko/uploads')
 ALLOWED_EXTENSIONS = {'jpeg', 'jpg', 'png'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 CHUNK_SIZE = 1024 * 1024  # 1MB per chunk
+
+
+class NotifyUploadRequest(BaseModel):
+    """Request model for notify_upload endpoint"""
+    water_meter_id: int = Field(..., gt=0, description="Water meter ID must be positive")
+    image_id: int = Field(..., gt=0, description="Image ID must be positive")
+    status: Literal["uploaded", "processing", "completed", "failed"] = Field(..., description="Upload status")
+
+
+async def verify_token(authorization: str = Header(None, alias="Authorization")):
+    """
+    Verify API token from Authorization header.
+    
+    Expected format: Bearer <token>
+    Token is compared against API_TOKEN environment variable.
+    
+    Raises:
+        HTTPException: 401 if token is missing, invalid format, or incorrect
+    
+    Returns:
+        str: The validated token
+    """
+    if not authorization:
+        logger.warning("Authentication failed: Authorization header missing")
+        raise HTTPException(
+            status_code=401,
+            detail="Authorization header missing"
+        )
+    
+    # Extract token from "Bearer <token>"
+    parts = authorization.split(' ', 1)  # Limit to 2 parts
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        logger.warning("Authentication failed: Invalid authorization header format")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authorization header format. Use: Bearer <token>"
+        )
+    
+    token = parts[1]
+    expected_token = os.getenv("API_TOKEN", "")
+    
+    if not expected_token:
+        logger.error("API_TOKEN environment variable is not set")
+        raise HTTPException(
+            status_code=500,
+            detail="Server configuration error"
+        )
+    
+    # Use constant-time comparison to prevent timing attacks
+    # secrets.compare_digest() safely handles different length strings
+    if not secrets.compare_digest(token, expected_token):
+        logger.warning("Authentication failed: Invalid token provided")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid API token"
+        )
+    
+    logger.info("Authentication successful")
+    return token
 
 
 def sanitize_filename(filename: str) -> str:
@@ -63,7 +125,8 @@ def validate_image_content(file_content: bytes) -> bool:
 async def upload_image(
     waterMeterId: int = Form(...),
     file: UploadFile = File(...),
-    db: Database = Depends(get_database)
+    db: Database = Depends(get_database),
+    token: str = Depends(verify_token)
 ):
     """
     Upload an image for a water meter.
@@ -72,6 +135,7 @@ async def upload_image(
         waterMeterId: The ID of the water meter
         file: The image file to upload (JPEG, JPG, or PNG)
         db: Database dependency
+        token: Authentication token
     
     Returns:
         JSON response with message, image_id, and image_url
@@ -93,9 +157,10 @@ async def upload_image(
     
     # Validate water meter exists and is active
     if not db.water_meter_exists(waterMeterId):
+        logger.warning(f"Upload failed: water meter ID {waterMeterId} not found")
         raise HTTPException(
             status_code=404,
-            detail=f"Water meter with ID {waterMeterId} not found or inactive"
+            detail="Water meter not found or inactive"
         )
     
     # Create upload directory if it doesn't exist
@@ -190,3 +255,65 @@ async def root():
 async def health():
     """Health check endpoint"""
     return {"status": "healthy"}
+
+
+@app.post("/notify_upload")
+async def notify_upload(
+    request: NotifyUploadRequest,
+    db: Database = Depends(get_database),
+    token: str = Depends(verify_token)
+):
+    """
+    Notify that an upload has been completed.
+    
+    Args:
+        request: Upload notification data
+        db: Database dependency
+        token: Authentication token
+    
+    Returns:
+        JSON response confirming notification
+    """
+    # Verify water meter exists
+    if not db.water_meter_exists(request.water_meter_id):
+        logger.warning(f"Upload notification failed: water meter ID {request.water_meter_id} not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Water meter not found or inactive"
+        )
+    
+    logger.info(f"Upload notification received: water_meter_id={request.water_meter_id}, image_id={request.image_id}, status={request.status}")
+    
+    return JSONResponse(
+        status_code=200,
+        content={
+            "message": "Upload notification received",
+            "water_meter_id": request.water_meter_id,
+            "image_id": request.image_id,
+            "status": request.status
+        }
+    )
+
+
+@app.get("/metrics")
+async def metrics(db: Database = Depends(get_database)):
+    """
+    Get system metrics.
+    
+    Public endpoint - no authentication required.
+    
+    Returns:
+        JSON response with system metrics
+    """
+    try:
+        metrics_data = db.get_metrics()
+        return JSONResponse(
+            status_code=200,
+            content=metrics_data
+        )
+    except Exception as e:
+        logger.error(f"Error fetching metrics: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error occurred while fetching metrics"
+        )

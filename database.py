@@ -133,6 +133,40 @@ class Database:
             logger.error(f"Error getting water meter info: {e}")
             raise
 
+    def get_metrics(self) -> dict:
+        """Get system metrics including image and water meter counts"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor()
+            try:
+                # Get total images count
+                cursor.execute("SELECT COUNT(*) as total FROM images")
+                result = cursor.fetchone()
+                total_images = result[0] if result else 0
+                
+                # Get processed images count
+                cursor.execute("SELECT COUNT(*) as total FROM images WHERE processed = 1")
+                result = cursor.fetchone()
+                processed_images = result[0] if result else 0
+                
+                # Get active water meters count
+                cursor.execute("SELECT COUNT(*) as total FROM water_meters WHERE is_active = 1")
+                result = cursor.fetchone()
+                active_meters = result[0] if result else 0
+                
+                return {
+                    "total_images": total_images,
+                    "processed_images": processed_images,
+                    "active_water_meters": active_meters
+                }
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error getting metrics: {e}")
+            raise
+
 
 def get_database():
     """Dependency to get database instance"""
