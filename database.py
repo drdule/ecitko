@@ -133,6 +133,150 @@ class Database:
             logger.error(f"Error getting water meter info: {e}")
             raise
 
+    def get_image_by_id(self, image_id: int) -> Optional[dict]:
+        """Get image record by ID"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor(dictionary=True)
+            try:
+                query = "SELECT * FROM images WHERE id = %s"
+                cursor.execute(query, (image_id,))
+                return cursor.fetchone()
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error getting image by ID: {e}")
+            raise
+
+    def get_total_images_count(self) -> int:
+        """Get total count of images"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor()
+            try:
+                query = "SELECT COUNT(*) FROM images"
+                cursor.execute(query)
+                result = cursor.fetchone()
+                return result[0] if result else 0
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error getting total images count: {e}")
+            raise
+
+    def get_total_water_meters_count(self) -> int:
+        """Get count of active water meters"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor()
+            try:
+                query = "SELECT COUNT(*) FROM water_meters WHERE is_active = 1"
+                cursor.execute(query)
+                result = cursor.fetchone()
+                return result[0] if result else 0
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error getting total water meters count: {e}")
+            raise
+
+    def get_total_consumers_count(self) -> int:
+        """Get total count of consumers"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor()
+            try:
+                query = "SELECT COUNT(*) FROM consumers"
+                cursor.execute(query)
+                result = cursor.fetchone()
+                return result[0] if result else 0
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error getting total consumers count: {e}")
+            raise
+
+    def get_images_by_water_meter(self) -> dict:
+        """Get image count grouped by water_meter_id"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor()
+            try:
+                query = "SELECT water_meter_id, COUNT(*) as count FROM images GROUP BY water_meter_id"
+                cursor.execute(query)
+                results = cursor.fetchall()
+                # Convert to dictionary
+                return {str(row[0]): row[1] for row in results}
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error getting images by water meter: {e}")
+            raise
+
+    def check_database_connection(self) -> bool:
+        """Check if database connection is healthy"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor()
+            try:
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+                return True
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Database connection check failed: {e}")
+            return False
+
+    def update_image_processed(self, image_id: int, processed: bool = True) -> bool:
+        """Update processed status of an image"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor()
+            try:
+                query = "UPDATE images SET processed = %s WHERE id = %s"
+                cursor.execute(query, (1 if processed else 0, image_id))
+                self.connection.commit()
+                return cursor.rowcount > 0
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error updating image processed status: {e}")
+            if self.connection:
+                self.connection.rollback()
+            raise
+
+    def get_active_water_meter_ids(self) -> list:
+        """Get list of IDs for all active water meters"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor()
+            try:
+                query = "SELECT id FROM water_meters WHERE is_active = 1"
+                cursor.execute(query)
+                return [row[0] for row in cursor.fetchall()]
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error getting active water meter IDs: {e}")
+            raise
+
 
 def get_database():
     """Dependency to get database instance"""
