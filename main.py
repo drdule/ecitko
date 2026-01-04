@@ -157,9 +157,10 @@ async def upload_image(
     
     # Validate water meter exists and is active
     if not db.water_meter_exists(waterMeterId):
+        logger.warning(f"Upload failed: water meter ID {waterMeterId} not found")
         raise HTTPException(
             status_code=404,
-            detail=f"Water meter with ID {waterMeterId} not found or inactive"
+            detail="Water meter not found or inactive"
         )
     
     # Create upload directory if it doesn't exist
@@ -275,12 +276,13 @@ async def notify_upload(
     """
     # Verify water meter exists
     if not db.water_meter_exists(request.water_meter_id):
+        logger.warning(f"Upload notification failed: water meter ID {request.water_meter_id} not found")
         raise HTTPException(
             status_code=404,
-            detail=f"Water meter with ID {request.water_meter_id} not found or inactive"
+            detail="Water meter not found or inactive"
         )
     
-    logger.info(f"Upload notification received for water_meter_id={request.water_meter_id}, image_id={request.image_id}, status={request.status}")
+    logger.info(f"Upload notification received: water_meter_id={request.water_meter_id}, image_id={request.image_id}, status={request.status}")
     
     return JSONResponse(
         status_code=200,
