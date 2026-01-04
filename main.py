@@ -50,7 +50,7 @@ async def verify_token(authorization: str = Header(None, alias="Authorization"))
         )
     
     # Extract token from "Bearer <token>"
-    parts = authorization.split()
+    parts = authorization.split(' ', 1)  # Limit to 2 parts
     if len(parts) != 2 or parts[0].lower() != "bearer":
         logger.warning("Authentication failed: Invalid authorization header format")
         raise HTTPException(
