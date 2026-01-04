@@ -1,12 +1,14 @@
 import os
 import re
 import uuid
+import secrets
 import logging
 from datetime import datetime
 from pathlib import Path
 from fastapi import FastAPI, File, UploadFile, Form, Depends, HTTPException, Header
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Literal
 from database import Database, get_database
 
 logging.basicConfig(level=logging.INFO)
@@ -22,9 +24,9 @@ CHUNK_SIZE = 1024 * 1024  # 1MB per chunk
 
 class NotifyUploadRequest(BaseModel):
     """Request model for notify_upload endpoint"""
-    water_meter_id: int
-    image_id: int
-    status: str
+    water_meter_id: int = Field(..., gt=0, description="Water meter ID must be positive")
+    image_id: int = Field(..., gt=0, description="Image ID must be positive")
+    status: Literal["uploaded", "processing", "completed", "failed"] = Field(..., description="Upload status")
 
 
 async def verify_token(authorization: str = Header(None)):
@@ -66,7 +68,7 @@ async def verify_token(authorization: str = Header(None)):
             detail="Server configuration error"
         )
     
-    if token != expected_token:
+    if not secrets.compare_digest(token, expected_token):
         logger.warning(f"Authentication failed: Invalid token provided")
         raise HTTPException(
             status_code=401,
@@ -300,33 +302,10 @@ async def metrics(db: Database = Depends(get_database)):
         JSON response with system metrics
     """
     try:
-        # Get total images count
-        if not db.connection or not db.connection.is_connected():
-            db.connect()
-        
-        cursor = db.connection.cursor()
-        try:
-            cursor.execute("SELECT COUNT(*) as total FROM images")
-            result = cursor.fetchone()
-            total_images = result[0] if result else 0
-            
-            cursor.execute("SELECT COUNT(*) as total FROM images WHERE processed = 1")
-            result = cursor.fetchone()
-            processed_images = result[0] if result else 0
-            
-            cursor.execute("SELECT COUNT(*) as total FROM water_meters WHERE is_active = 1")
-            result = cursor.fetchone()
-            active_meters = result[0] if result else 0
-        finally:
-            cursor.close()
-        
+        metrics_data = db.get_metrics()
         return JSONResponse(
             status_code=200,
-            content={
-                "total_images": total_images,
-                "processed_images": processed_images,
-                "active_water_meters": active_meters
-            }
+            content=metrics_data
         )
     except Exception as e:
         logger.error(f"Error fetching metrics: {str(e)}")
