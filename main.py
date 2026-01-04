@@ -1,6 +1,7 @@
 import os
 import re
 import uuid
+import hmac
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -25,7 +26,6 @@ class NotifyUploadRequest(BaseModel):
     """Request model for notify_upload endpoint"""
     image_id: int
     water_meter_id: int
-    status: str
 
 
 async def verify_token(authorization: Optional[str] = Header(None)):
@@ -67,7 +67,8 @@ async def verify_token(authorization: Optional[str] = Header(None)):
             detail="Server authentication not configured"
         )
     
-    if token != expected_token:
+    # Use constant-time comparison to prevent timing attacks
+    if not hmac.compare_digest(token, expected_token):
         logger.warning(f"Invalid token attempt: {token[:10]}...")
         raise HTTPException(
             status_code=401,
@@ -362,7 +363,6 @@ async def metrics(db: Database = Depends(get_database)):
                     "total_images": total_images,
                     "total_active_meters": total_meters,
                     "images_by_meter": images_by_meter,
-                    "upload_directory": UPLOAD_DIR,
                     "max_file_size_mb": MAX_FILE_SIZE / (1024 * 1024),
                     "allowed_formats": list(ALLOWED_EXTENSIONS)
                 }
