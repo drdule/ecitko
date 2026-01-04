@@ -229,7 +229,9 @@ async def health_check(db: Database = Depends(get_database)):
     disk_usage_gb = 0.0
     disk_available_gb = 0.0
     try:
-        stat = shutil.disk_usage(UPLOAD_DIR if upload_path.exists() else "/")
+        # Check disk usage on upload directory if it exists, otherwise check root
+        check_path = UPLOAD_DIR if upload_path.exists() else "/"
+        stat = shutil.disk_usage(check_path)
         disk_usage_gb = round((stat.total - stat.free) / (1024**3), 2)
         disk_available_gb = round(stat.free / (1024**3), 2)
         
@@ -271,13 +273,9 @@ async def get_metrics(db: Database = Depends(get_database)):
         # Get all active water meters and ensure they're in the images_by_water_meter dict
         # This ensures water meters with 0 images are shown
         all_water_meters_dict = {}
-        cursor = db.connection.cursor()
-        try:
-            cursor.execute("SELECT id FROM water_meters WHERE is_active = 1")
-            for (meter_id,) in cursor.fetchall():
-                all_water_meters_dict[str(meter_id)] = images_by_water_meter.get(str(meter_id), 0)
-        finally:
-            cursor.close()
+        active_meter_ids = db.get_active_water_meter_ids()
+        for meter_id in active_meter_ids:
+            all_water_meters_dict[str(meter_id)] = images_by_water_meter.get(str(meter_id), 0)
         
         # Calculate disk usage for uploads directory
         disk_usage_mb = 0.0
@@ -328,6 +326,7 @@ async def notify_upload(request: NotifyUploadRequest, db: Database = Depends(get
             )
         
         # Check if image file exists on disk
+        # Note: image_url is stored as an absolute path (see upload endpoint line 170)
         image_path = Path(image['image_url'])
         file_exists = image_path.exists() and image_path.is_file()
         

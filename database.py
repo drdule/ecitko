@@ -260,6 +260,23 @@ class Database:
                 self.connection.rollback()
             raise
 
+    def get_active_water_meter_ids(self) -> list:
+        """Get list of IDs for all active water meters"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor()
+            try:
+                query = "SELECT id FROM water_meters WHERE is_active = 1"
+                cursor.execute(query)
+                return [row[0] for row in cursor.fetchall()]
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error getting active water meter IDs: {e}")
+            raise
+
 
 def get_database():
     """Dependency to get database instance"""
