@@ -50,9 +50,13 @@ FastAPI automatski generiše dokumentaciju:
 
 Upload slika za vodomer.
 
+**Requires authentication via Bearer token.**
+
 ### Request
 - **Method**: POST
 - **Content-Type**: multipart/form-data
+- **Headers**:
+  - `Authorization: Bearer <token>` (required)
 - **Parameters**:
   - `waterMeterId` (int, required): ID vodomera
   - `file` (file, required): Slika fajl (JPEG, JPG, PNG)
@@ -86,9 +90,46 @@ Upload slika za vodomer.
 
 ```bash
 curl -X POST "http://localhost:8000/upload" \
+  -H "Authorization: Bearer your_secret_token_here" \
   -F "waterMeterId=1" \
   -F "file=@meter_reading.jpg"
 ```
+
+## Authentication
+
+All image upload endpoints require API token authentication.
+
+### Setup
+
+1. Set the API token in `.env` file:
+   ```
+   API_TOKEN=your_secret_token_here
+   ```
+
+2. Include the token in the Authorization header:
+   ```
+   Authorization: Bearer your_secret_token_here
+   ```
+
+### Example
+
+```bash
+curl -X POST http://your-server:8002/upload \
+  -H "Authorization: Bearer your_secret_token_here" \
+  -F "waterMeterId=1" \
+  -F "file=@image.jpg"
+```
+
+### Protected Endpoints
+
+- `POST /upload` - Upload image
+- `POST /notify_upload` - Notify upload
+
+### Public Endpoints
+
+- `GET /` - Root
+- `GET /health` - Health check
+- `GET /metrics` - System metrics
 
 ## MySQL Schema
 
