@@ -29,7 +29,7 @@ class NotifyUploadRequest(BaseModel):
     status: Literal["uploaded", "processing", "completed", "failed"] = Field(..., description="Upload status")
 
 
-async def verify_token(authorization: str = Header(None)):
+async def verify_token(authorization: str = Header(None, alias="Authorization")):
     """
     Verify API token from Authorization header.
     
@@ -52,7 +52,7 @@ async def verify_token(authorization: str = Header(None)):
     # Extract token from "Bearer <token>"
     parts = authorization.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
-        logger.warning(f"Authentication failed: Invalid authorization header format")
+        logger.warning("Authentication failed: Invalid authorization header format")
         raise HTTPException(
             status_code=401,
             detail="Invalid authorization header format. Use: Bearer <token>"
@@ -68,8 +68,10 @@ async def verify_token(authorization: str = Header(None)):
             detail="Server configuration error"
         )
     
+    # Use constant-time comparison to prevent timing attacks
+    # secrets.compare_digest() safely handles different length strings
     if not secrets.compare_digest(token, expected_token):
-        logger.warning(f"Authentication failed: Invalid token provided")
+        logger.warning("Authentication failed: Invalid token provided")
         raise HTTPException(
             status_code=401,
             detail="Invalid API token"
