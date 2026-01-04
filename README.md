@@ -46,6 +46,51 @@ FastAPI automatski generiše dokumentaciju:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
+## Authentication
+
+This API uses Bearer token authentication for protected endpoints.
+
+### Setup
+
+1. Set the `API_TOKEN` environment variable in `.env`:
+   ```bash
+   API_TOKEN=your_secure_token_here
+   ```
+
+2. Generate a secure token (recommended for production):
+   ```bash
+   openssl rand -hex 32
+   ```
+
+### Usage
+
+Include the token in the `Authorization` header:
+
+```bash
+curl -X POST http://your-server:8002/upload \
+  -H "Authorization: Bearer your_secure_token_here" \
+  -F "waterMeterId=1" \
+  -F "file=@image.jpg"
+```
+
+### Protected Endpoints
+
+The following endpoints require authentication:
+- `POST /upload` - Upload water meter image
+- `POST /notify_upload` - Notify upload completion
+
+### Public Endpoints
+
+The following endpoints are public (no authentication required):
+- `GET /` - Root endpoint
+- `GET /health` - Health check
+- `GET /metrics` - System metrics
+
+### Response Codes
+
+- `401 Unauthorized` - Missing, invalid, or incorrect token
+- `200 OK` - Request successful with valid token
+
 ## Endpoint: POST /upload
 
 Upload slika za vodomer.
@@ -86,6 +131,7 @@ Upload slika za vodomer.
 
 ```bash
 curl -X POST "http://localhost:8000/upload" \
+  -H "Authorization: Bearer your_secure_token_here" \
   -F "waterMeterId=1" \
   -F "file=@meter_reading.jpg"
 ```
@@ -155,6 +201,7 @@ Za testiranje endpointa, prvo pokreni aplikaciju, a zatim možeš koristiti:
 ### cURL
 ```bash
 curl -X POST "http://localhost:8000/upload" \
+  -H "Authorization: Bearer your_secure_token_here" \
   -F "waterMeterId=1" \
   -F "file=@meter_reading.jpg"
 ```
@@ -164,6 +211,7 @@ Otvori browser i idi na `http://localhost:8000/docs` za interaktivnu API dokumen
 
 ## Bezbednosne karakteristike
 
+- **Bearer token authentication**: API token autentikacija za zaštićene endpoint-e
 - **Validacija environment varijabli**: Sve neophodne env varijable moraju biti postavljene
 - **Connection pooling**: Thread-safe pristup bazi podataka
 - **Cursor leak prevention**: Svi cursor-i se pravilno zatvaraju
@@ -173,3 +221,4 @@ Otvori browser i idi na `http://localhost:8000/docs` za interaktivnu API dokumen
 - **Error message sanitization**: Interni detalji se ne prikazuju korisnicima
 - **UUID u imenu fajla**: Dodatna zaštita od kolizije fajlova
 - **Chunked file upload**: Efikasno upravljanje memorijom
+- **Authentication logging**: Beleženje neuspelih pokušaja autentikacije
