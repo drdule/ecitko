@@ -16,10 +16,12 @@ from slowapi.errors import RateLimitExceeded
 from celery import Celery
 
 # Celery configuration
+_broker_url = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+_backend_url = os.getenv('CELERY_BACKEND_URL', 'redis://localhost:6379/0')
 celery_app = Celery(
-    'ecitko_worker',  # <-- ISTO IME KAO U worker.  py
-    broker='redis://localhost:6379/0',
-    backend='redis://localhost:6379/0'
+    'ecitko_worker',
+    broker=_broker_url,
+    backend=_backend_url
 )
 
 logging.basicConfig(level=logging.INFO)
