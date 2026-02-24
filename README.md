@@ -4,6 +4,14 @@ FastAPI aplikacija za upload slika potrošača brojila.
 
 ## Instalacija i pokretanje
 
+### Korak 0: Kloniranje repozitorijuma
+
+Pre svega, kloniraj repozitorijum na lokalni računar:
+```bash
+git clone https://github.com/drdule/ecitko.git
+cd ecitko
+```
+
 ### Opcija 1: Docker (preporučeno)
 
 1. Pokreni aplikaciju sa Docker Compose:
