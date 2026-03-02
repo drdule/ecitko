@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*. py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+*. env
+
+# Alembic
+alembic/versions/__pycache__/
+
+# Logs
+*.log
+/logs/
+
+# Uploads (slike ne idu na GitHub!)
+/uploads/
+*. jpg
+*.jpeg
+*.png
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite

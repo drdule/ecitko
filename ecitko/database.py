@@ -16,7 +16,6 @@ class Database:
     def __init__(self):
         # Get environment variables without defaults
         self.host = os.getenv('DB_HOST')
-        self.port = int(os.getenv('DB_PORT', '3306'))
         self.user = os.getenv('DB_USER')
         self.password = os.getenv('DB_PASSWORD')
         self.database = os.getenv('DB_NAME')
@@ -24,12 +23,12 @@ class Database:
         # Validate that all required environment variables are set
         missing = []
         if not self.host:
-            missing. append('DB_HOST')
+            missing.append('DB_HOST')
         if not self.user:
             missing.append('DB_USER')
         if not self.password:
             missing.append('DB_PASSWORD')
-        if not self. database:
+        if not self.database:
             missing.append('DB_NAME')
         if missing:
             raise RuntimeError(f"Missing required database environment variables: {', '.join(missing)}")
@@ -45,13 +44,14 @@ class Database:
                 self.pool = MySQLConnectionPool(
                     pool_name="ecitko_pool",
                     pool_size=5,
-                    host=self. host,                    port=self.port,                    user=self.user,
+                    host=self.host,
+                    user=self.user,
                     password=self.password,
                     database=self.database
                 )
             
             # Get connection from pool
-            self.connection = self. pool.get_connection()
+            self.connection = self.pool.get_connection()
             
         except Error as e: 
             logger.error(f"Error connecting to MySQL: {e}")
@@ -86,20 +86,20 @@ class Database:
             if not self.connection or not self.connection.is_connected():
                 self.connect()
             
-            cursor = self. connection.cursor()
+            cursor = self.connection.cursor()
             try:
                 query = """
                     INSERT INTO images (water_meter_id, image_url, processed, created_at)
                     VALUES (%s, %s, 0, NOW())
                 """
                 cursor.execute(query, (water_meter_id, image_url))
-                self.connection. commit()
+                self.connection.commit()
                 image_id = cursor.lastrowid
                 return image_id
             finally: 
                 cursor.close()
         except Error as e:
-            logger. error(f"Error inserting image: {e}")
+            logger.error(f"Error inserting image: {e}")
             if self.connection:
                 self.connection.rollback()
             raise
@@ -126,11 +126,11 @@ class Database:
                     WHERE wm.id = %s
                 """
                 cursor.execute(query, (water_meter_id,))
-                return cursor. fetchone()
+                return cursor.fetchone()
             finally: 
                 cursor.close()
         except Error as e:
-            logger. error(f"Error getting water meter info: {e}")
+            logger.error(f"Error getting water meter info: {e}")
             raise
 
     def get_total_images_count(self) -> int:
@@ -153,8 +153,8 @@ class Database:
     def get_total_water_meters_count(self) -> int:
         """Get count of active water meters"""
         try: 
-            if not self.connection or not self.connection. is_connected():
-                self. connect()
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
             
             cursor = self.connection.cursor()
             try:
@@ -170,7 +170,7 @@ class Database:
     def get_total_consumers_count(self) -> int:
         """Get total count of consumers"""
         try:
-            if not self. connection or not self.connection.is_connected():
+            if not self.connection or not self.connection.is_connected():
                 self.connect()
             
             cursor = self.connection.cursor()
@@ -187,12 +187,12 @@ class Database:
     def get_images_by_water_meter(self) -> dict:
         """Get image count grouped by water_meter_id"""
         try: 
-            if not self.connection or not self. connection.is_connected():
+            if not self.connection or not self.connection.is_connected():
                 self.connect()
             
             cursor = self.connection.cursor()
             try:
-                cursor. execute("""
+                cursor.execute("""
                     SELECT water_meter_id, COUNT(*) as count 
                     FROM images 
                     GROUP BY water_meter_id
@@ -211,9 +211,9 @@ class Database:
             if not self.connection or not self.connection.is_connected():
                 self.connect()
             
-            cursor = self. connection.cursor(dictionary=True)
+            cursor = self.connection.cursor(dictionary=True)
             try:
-                cursor. execute("SELECT * FROM images WHERE id = %s", (image_id,))
+                cursor.execute("SELECT * FROM images WHERE id = %s", (image_id,))
                 return cursor.fetchone()
             finally:
                 cursor.close()
@@ -227,7 +227,7 @@ class Database:
             if not self.connection or not self.connection.is_connected():
                 self.connect()
             
-            cursor = self. connection.cursor()
+            cursor = self.connection.cursor()
             try:
                 query = "UPDATE images SET processed = %s WHERE id = %s"
                 cursor.execute(query, (1 if processed else 0, image_id))
@@ -291,13 +291,113 @@ class Database:
                 ocr_result_id = cursor.lastrowid
                 return ocr_result_id
             finally:
-                cursor. close()
+                cursor.close()
         except Error as e:
             logger.error(f"Error saving OCR result: {e}")
             if self.connection:
                 self.connection.rollback()
             raise
+    def get_failed_ocr_results(self, limit: int = 100) -> list: 
+        """Vrati sve failed OCR task-ove"""
+        try: 
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor(dictionary=True)
+            try:
+                query = """
+                    SELECT 
+                        ocr.id,
+                        ocr.image_id,
+                        ocr.task_id,
+                        ocr.value,
+                        ocr.raw_text,
+                        ocr.confidence,
+                        ocr.status,
+                        ocr.error_message,
+                        ocr.created_at,
+                        img.water_meter_id,
+                        img.image_url
+                    FROM ocr_results ocr
+                    JOIN images img ON ocr.image_id = img.id
+                    WHERE ocr.status = 'failed'
+                    ORDER BY ocr.created_at DESC
+                    LIMIT %s
+                """
+                cursor.execute(query, (limit,))
+                return cursor.fetchall()
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error getting failed OCR results: {e}")
+            raise
 
+    def get_ocr_result_by_task_id(self, task_id: str) -> Optional[dict]:
+        """Vrati OCR rezultat po task_id"""
+        try:
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor(dictionary=True)
+            try:
+                query = """
+                    SELECT 
+                        ocr.*,
+                        img.water_meter_id,
+                        img.image_url
+                    FROM ocr_results ocr
+                    JOIN images img ON ocr.image_id = img.id
+                    WHERE ocr.task_id = %s
+                """
+                cursor.execute(query, (task_id,))
+                return cursor.fetchone()
+            finally:
+                cursor.close()
+        except Error as e: 
+            logger.error(f"Error getting OCR result by task_id: {e}")
+            raise
+
+    def get_ocr_statistics(self) -> dict:
+        """Vrati OCR statistiku"""
+        try: 
+            if not self.connection or not self.connection.is_connected():
+                self.connect()
+            
+            cursor = self.connection.cursor(dictionary=True)
+            try:
+                query = """
+                    SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as successful,
+                        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                        SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors,
+                        AVG(CASE WHEN status = 'success' THEN confidence ELSE NULL END) as avg_confidence
+                    FROM ocr_results
+                """
+                cursor.execute(query)
+                result = cursor.fetchone()
+                
+                if not result:
+                    return {
+                        'total': 0,
+                        'successful': 0,
+                        'failed': 0,
+                        'errors':  0,
+                        'avg_confidence': 0.0
+                    }
+                
+                return {
+                    'total': result['total'] or 0,
+                    'successful': result['successful'] or 0,
+                    'failed': result['failed'] or 0,
+                    'errors': result['errors'] or 0,
+                    'avg_confidence': round(result['avg_confidence'] or 0.0, 2)
+                }
+            finally:
+                cursor.close()
+        except Error as e:
+            logger.error(f"Error getting OCR statistics: {e}")
+            raise
 
 def get_database():
     """Dependency to get database instance"""
